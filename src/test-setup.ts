@@ -18,3 +18,9 @@ Object.defineProperty(globalThis, 'localStorage', {
   value: localStorageMock,
   writable: true,
 })
+
+// jsdom does not implement showModal/close on <dialog>; polyfill for tests.
+if (!HTMLDialogElement.prototype.showModal) {
+  HTMLDialogElement.prototype.showModal = function () { this.setAttribute('open', '') }
+  HTMLDialogElement.prototype.close = function () { this.removeAttribute('open') }
+}

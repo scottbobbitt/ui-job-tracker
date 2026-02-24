@@ -3,6 +3,8 @@ import { useApplications } from './hooks/useApplications'
 import { ApplicationForm } from './components/ApplicationForm'
 import { ApplicationTable } from './components/ApplicationTable'
 import { ExportButton } from './components/ExportButton'
+import { EditModal } from './components/EditModal'
+import { WeeklySummary } from './components/WeeklySummary'
 import { filterAndSort } from './utils/filterAndSort'
 import type { JobApplication, ApplicationStatus } from './types'
 import type { SortDirection } from './utils/filterAndSort'
@@ -13,15 +15,6 @@ export default function App() {
   const [statusFilter, setStatusFilter] = useState<ApplicationStatus | ''>('')
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc')
 
-  function handleSubmit(data: Omit<JobApplication, 'id' | 'createdAt' | 'updatedAt'>) {
-    if (editingApp) {
-      update(editingApp.id, data)
-      setEditingApp(undefined)
-    } else {
-      add(data)
-    }
-  }
-
   const visible = filterAndSort(applications, { statusFilter, sortDirection })
 
   return (
@@ -29,16 +22,12 @@ export default function App() {
       <div className="max-w-4xl mx-auto px-4 space-y-8">
         <h1 className="text-2xl font-bold text-gray-900">Job Application Tracker</h1>
 
-        {/* Add / Edit form */}
+        <WeeklySummary applications={applications} />
+
+        {/* Add form */}
         <section className="bg-white rounded-lg border border-gray-200 p-6">
-          <h2 className="text-base font-semibold text-gray-800 mb-4">
-            {editingApp ? 'Edit Application' : 'Add Application'}
-          </h2>
-          <ApplicationForm
-            onSubmit={handleSubmit}
-            initialData={editingApp}
-            onCancel={editingApp ? () => setEditingApp(undefined) : undefined}
-          />
+          <h2 className="text-base font-semibold text-gray-800 mb-4">Add Application</h2>
+          <ApplicationForm onSubmit={add} />
         </section>
 
         {/* Controls */}
@@ -92,6 +81,15 @@ export default function App() {
           />
         </section>
       </div>
+
+      {/* Edit modal — rendered outside the layout flow so it sits above everything */}
+      {editingApp && (
+        <EditModal
+          app={editingApp}
+          onSave={(data) => { update(editingApp.id, data); setEditingApp(undefined) }}
+          onClose={() => setEditingApp(undefined)}
+        />
+      )}
     </div>
   )
 }
