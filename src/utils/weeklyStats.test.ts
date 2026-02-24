@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { getWeekBounds, countApplicationsThisWeek } from './weeklyStats'
+import { getWeekBounds, getPeriodBounds, countApplicationsThisWeek } from './weeklyStats'
 import type { JobApplication } from '../types'
 
 function makeApp(dateApplied: string): JobApplication {
@@ -53,6 +53,27 @@ describe('getWeekBounds', () => {
   })
 })
 
+describe('getPeriodBounds', () => {
+  it('with weeks=1 matches getWeekBounds', () => {
+    const date = new Date('2026-02-18')
+    expect(getPeriodBounds(date, 1)).toEqual(getWeekBounds(date))
+  })
+
+  it('with weeks=2 starts on the same Sunday and ends 13 days later', () => {
+    // 2026-02-18 is Wednesday; week starts Feb 15 (Sun)
+    const bounds = getPeriodBounds(new Date('2026-02-18'), 2)
+    expect(bounds.start).toBe('2026-02-15')
+    expect(bounds.end).toBe('2026-02-28') // Feb 15 + 13 days
+  })
+
+  it('biweekly period crosses a month boundary correctly', () => {
+    // 2026-03-03 is Tuesday; week starts Mar 1 (Sun); +13 days = Mar 14
+    const bounds = getPeriodBounds(new Date('2026-03-03'), 2)
+    expect(bounds.start).toBe('2026-03-01')
+    expect(bounds.end).toBe('2026-03-14')
+  })
+})
+
 describe('countApplicationsThisWeek', () => {
   const today = new Date('2026-02-18') // Wednesday; week = Feb 15–21
 
@@ -86,5 +107,16 @@ describe('countApplicationsThisWeek', () => {
 
   it('includes applications on exactly the Saturday boundary', () => {
     expect(countApplicationsThisWeek([makeApp('2026-02-21')], today)).toBe(1)
+  })
+
+  it('counts a full 2-week period when weeks=2', () => {
+    // period: Feb 15 – Feb 28
+    const apps = [makeApp('2026-02-15'), makeApp('2026-02-21'), makeApp('2026-02-28')]
+    expect(countApplicationsThisWeek(apps, today, 2)).toBe(3)
+  })
+
+  it('excludes entries outside the 2-week period', () => {
+    const apps = [makeApp('2026-02-14'), makeApp('2026-03-01')]
+    expect(countApplicationsThisWeek(apps, today, 2)).toBe(0)
   })
 })

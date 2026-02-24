@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect } from 'react'
 import type { JobApplication } from '../types'
-import { getWeekBounds, countApplicationsThisWeek } from '../utils/weeklyStats'
+import { getPeriodBounds, countApplicationsThisWeek } from '../utils/weeklyStats'
 
 const GOAL_KEY = 'weekly-goal'
+const PERIOD_KEY = 'weekly-period'
 const DEFAULT_GOAL = 5
 
 function loadGoal(): number {
@@ -11,12 +12,17 @@ function loadGoal(): number {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_GOAL
 }
 
+function loadPeriod(): 1 | 2 {
+  return localStorage.getItem(PERIOD_KEY) === '2' ? 2 : 1
+}
+
 function formatRange(start: string, end: string): string {
-  const fmt = (iso: string) => {
-    const [, m, d] = iso.split('-')
-    const date = new Date(`${iso}T00:00:00Z`)
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })
-  }
+  const fmt = (iso: string) =>
+    new Date(`${iso}T00:00:00Z`).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      timeZone: 'UTC',
+    })
   return `${fmt(start)} – ${fmt(end)}`
 }
 
@@ -35,8 +41,9 @@ interface Props {
 }
 
 export function WeeklySummary({ applications, today = new Date() }: Props) {
-  const { start, end } = getWeekBounds(today)
-  const count = countApplicationsThisWeek(applications, today)
+  const [period, setPeriod] = useState<1 | 2>(loadPeriod)
+  const { start, end } = getPeriodBounds(today, period)
+  const count = countApplicationsThisWeek(applications, today, period)
   const [goal, setGoal] = useState<number>(loadGoal)
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState<string>('')
@@ -45,6 +52,11 @@ export function WeeklySummary({ applications, today = new Date() }: Props) {
   useEffect(() => {
     if (editing) inputRef.current?.select()
   }, [editing])
+
+  function setPeriodAndStore(value: 1 | 2) {
+    setPeriod(value)
+    localStorage.setItem(PERIOD_KEY, String(value))
+  }
 
   function startEditing() {
     setDraft(String(goal))
@@ -71,9 +83,24 @@ export function WeeklySummary({ applications, today = new Date() }: Props) {
   return (
     <div className="rounded-lg border border-gray-200 bg-white px-6 py-4 shadow-sm">
       <div className="flex items-center justify-between mb-2">
-        <div>
-          <span className="text-sm font-semibold text-gray-700">This Week</span>
-          <span className="ml-2 text-sm text-gray-400">{formatRange(start, end)}</span>
+        <div className="flex items-center gap-3">
+          <div className="flex rounded border border-gray-200 text-xs font-medium overflow-hidden">
+            <button
+              onClick={() => setPeriodAndStore(1)}
+              aria-pressed={period === 1}
+              className={`px-2 py-1 ${period === 1 ? 'bg-blue-600 text-white' : 'text-gray-500 hover:bg-gray-50'}`}
+            >
+              Weekly
+            </button>
+            <button
+              onClick={() => setPeriodAndStore(2)}
+              aria-pressed={period === 2}
+              className={`px-2 py-1 border-l border-gray-200 ${period === 2 ? 'bg-blue-600 text-white' : 'text-gray-500 hover:bg-gray-50'}`}
+            >
+              Biweekly
+            </button>
+          </div>
+          <span className="text-sm text-gray-400">{formatRange(start, end)}</span>
         </div>
         <div className="text-sm text-gray-700">
           <span className="font-semibold text-gray-900">{count}</span>

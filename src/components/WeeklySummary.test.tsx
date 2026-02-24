@@ -101,4 +101,44 @@ describe('WeeklySummary', () => {
     const bar = screen.getByRole('progressbar')
     expect(bar.className).toMatch(/bg-green/)
   })
+
+  it('defaults to Weekly mode', () => {
+    render(<WeeklySummary applications={[]} today={TODAY} />)
+    // Weekly button should be "pressed" (active)
+    expect(screen.getByRole('button', { name: 'Weekly' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('button', { name: 'Biweekly' })).toHaveAttribute('aria-pressed', 'false')
+  })
+
+  it('switching to Biweekly shows a 14-day date range', async () => {
+    const user = userEvent.setup()
+    // TODAY is 2026-02-18 (Wed); biweekly: Feb 15 – Feb 28
+    render(<WeeklySummary applications={[]} today={TODAY} />)
+    await user.click(screen.getByRole('button', { name: 'Biweekly' }))
+    expect(screen.getByText(/feb 28/i)).toBeInTheDocument()
+  })
+
+  it('biweekly mode counts applications across 2 weeks', async () => {
+    const user = userEvent.setup()
+    // Week 1: Feb 15–21; Week 2: Feb 22–28
+    const apps = [makeApp('2026-02-16'), makeApp('2026-02-25')]
+    render(<WeeklySummary applications={apps} today={TODAY} />)
+    // Weekly: only the Feb 16 entry is visible
+    expect(screen.getByText('1')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Biweekly' }))
+    // Biweekly: both entries visible
+    expect(screen.getByText('2')).toBeInTheDocument()
+  })
+
+  it('period choice persists to localStorage', async () => {
+    const user = userEvent.setup()
+    render(<WeeklySummary applications={[]} today={TODAY} />)
+    await user.click(screen.getByRole('button', { name: 'Biweekly' }))
+    expect(localStorage.getItem('weekly-period')).toBe('2')
+  })
+
+  it('loads saved period from localStorage', () => {
+    localStorage.setItem('weekly-period', '2')
+    render(<WeeklySummary applications={[]} today={TODAY} />)
+    expect(screen.getByRole('button', { name: 'Biweekly' })).toHaveAttribute('aria-pressed', 'true')
+  })
 })

@@ -4,6 +4,7 @@ import { ApplicationForm } from './components/ApplicationForm'
 import { ApplicationTable } from './components/ApplicationTable'
 import { ExportButton } from './components/ExportButton'
 import { EditModal } from './components/EditModal'
+import { ConfirmDialog } from './components/ConfirmDialog'
 import { WeeklySummary } from './components/WeeklySummary'
 import { filterAndSort } from './utils/filterAndSort'
 import type { JobApplication, ApplicationStatus } from './types'
@@ -12,10 +13,12 @@ import type { SortDirection } from './utils/filterAndSort'
 export default function App() {
   const { applications, add, update, remove } = useApplications()
   const [editingApp, setEditingApp] = useState<JobApplication | undefined>()
+  const [deletingId, setDeletingId] = useState<string | undefined>()
   const [statusFilter, setStatusFilter] = useState<ApplicationStatus | ''>('')
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc')
+  const [search, setSearch] = useState('')
 
-  const visible = filterAndSort(applications, { statusFilter, sortDirection })
+  const visible = filterAndSort(applications, { statusFilter, sortDirection, search })
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -32,6 +35,15 @@ export default function App() {
 
         {/* Controls */}
         <div className="flex flex-wrap items-center gap-4">
+          <input
+            type="search"
+            placeholder="Search company or title…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            aria-label="Search applications"
+            className="rounded border border-gray-300 px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+
           <div className="flex items-center gap-2">
             <label htmlFor="statusFilter" className="text-sm text-gray-600">Filter:</label>
             <select
@@ -76,7 +88,7 @@ export default function App() {
           </h2>
           <ApplicationTable
             applications={visible}
-            onDelete={remove}
+            onDelete={setDeletingId}
             onEdit={setEditingApp}
           />
         </section>
@@ -88,6 +100,14 @@ export default function App() {
           app={editingApp}
           onSave={(data) => { update(editingApp.id, data); setEditingApp(undefined) }}
           onClose={() => setEditingApp(undefined)}
+        />
+      )}
+
+      {deletingId && (
+        <ConfirmDialog
+          message="Delete this application? This cannot be undone."
+          onConfirm={() => { remove(deletingId); setDeletingId(undefined) }}
+          onCancel={() => setDeletingId(undefined)}
         />
       )}
     </div>

@@ -2,15 +2,21 @@ import { describe, it, expect } from 'vitest'
 import { filterAndSort } from './filterAndSort'
 import type { JobApplication } from '../types'
 
-function makeApp(id: string, dateApplied: string, status?: JobApplication['status']): JobApplication {
-  return { id, dateApplied, status, createdAt: '', updatedAt: '' }
+function makeApp(
+  id: string,
+  dateApplied: string,
+  status?: JobApplication['status'],
+  companyName?: string,
+  jobTitle?: string,
+): JobApplication {
+  return { id, dateApplied, status, companyName, jobTitle, createdAt: '', updatedAt: '' }
 }
 
 const APPS = [
-  makeApp('1', '2026-01-15', 'applied'),
-  makeApp('2', '2026-01-10', 'interview'),
-  makeApp('3', '2026-01-20', 'applied'),
-  makeApp('4', '2026-01-05'),
+  makeApp('1', '2026-01-15', 'applied', 'Globex', 'Engineer'),
+  makeApp('2', '2026-01-10', 'interview', 'Initech', 'Developer'),
+  makeApp('3', '2026-01-20', 'applied', 'Globex', 'Manager'),
+  makeApp('4', '2026-01-05', undefined, 'Acme', 'Designer'),
 ]
 
 describe('filterAndSort', () => {
@@ -39,5 +45,29 @@ describe('filterAndSort', () => {
     const copy = [...APPS]
     filterAndSort(APPS, { statusFilter: '', sortDirection: 'asc' })
     expect(APPS).toEqual(copy)
+  })
+
+  it('filters by company name search (case-insensitive)', () => {
+    const result = filterAndSort(APPS, { statusFilter: '', sortDirection: 'desc', search: 'globex' })
+    expect(result).toHaveLength(2)
+    expect(result.every((a) => a.companyName === 'Globex')).toBe(true)
+  })
+
+  it('filters by job title search', () => {
+    const result = filterAndSort(APPS, { statusFilter: '', sortDirection: 'desc', search: 'Engineer' })
+    expect(result).toHaveLength(1)
+    expect(result[0].id).toBe('1')
+  })
+
+  it('returns all when search is empty', () => {
+    const result = filterAndSort(APPS, { statusFilter: '', sortDirection: 'desc', search: '' })
+    expect(result).toHaveLength(4)
+  })
+
+  it('combines search and status filter', () => {
+    // Globex has 2 entries; only 1 has status 'applied' and title 'Engineer'
+    const result = filterAndSort(APPS, { statusFilter: 'applied', sortDirection: 'desc', search: 'Engineer' })
+    expect(result).toHaveLength(1)
+    expect(result[0].id).toBe('1')
   })
 })

@@ -16,12 +16,25 @@ export function getWeekBounds(date: Date): { start: string; end: string } {
   }
 }
 
-/** Counts applications whose dateApplied falls within the current week (Sun–Sat). */
+/** Returns the start/end of a 1- or 2-week reporting period beginning on the
+ *  Sunday of the week containing `date`. */
+export function getPeriodBounds(
+  date: Date,
+  weeks: 1 | 2,
+): { start: string; end: string } {
+  const { start } = getWeekBounds(date)
+  const end = new Date(`${start}T00:00:00Z`)
+  end.setUTCDate(end.getUTCDate() + weeks * 7 - 1)
+  return { start, end: end.toISOString().slice(0, 10) }
+}
+
+/** Counts applications whose dateApplied falls within the given period. */
 export function countApplicationsThisWeek(
   applications: JobApplication[],
   today: Date = new Date(),
+  weeks: 1 | 2 = 1,
 ): number {
-  const { start, end } = getWeekBounds(today)
+  const { start, end } = getPeriodBounds(today, weeks)
   return applications.filter(
     (app) => app.dateApplied >= start && app.dateApplied <= end,
   ).length
