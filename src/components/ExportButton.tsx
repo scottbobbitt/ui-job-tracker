@@ -40,9 +40,10 @@ export function buildCsv(applications: JobApplication[]): string {
 
 interface Props {
   applications: JobApplication[]
+  onExport?: () => void
 }
 
-export function ExportButton({ applications }: Props) {
+export function ExportButton({ applications, onExport }: Props) {
   function handleExport() {
     const csv = buildCsv(applications)
     const date = new Date().toISOString().slice(0, 10)
@@ -53,6 +54,7 @@ export function ExportButton({ applications }: Props) {
     a.download = `job-applications-${date}.csv`
     a.click()
     URL.revokeObjectURL(url)
+    onExport?.()
   }
 
   return (

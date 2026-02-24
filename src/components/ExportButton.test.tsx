@@ -107,4 +107,13 @@ describe('ExportButton', () => {
     expect(URL.createObjectURL).toHaveBeenCalled()
     expect(clickSpy).toHaveBeenCalled()
   })
+
+  it('calls onExport after a successful download', async () => {
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+    const onExport = vi.fn()
+    const user = userEvent.setup()
+    render(<ExportButton applications={APPS} onExport={onExport} />)
+    await user.click(screen.getByRole('button', { name: /export csv/i }))
+    expect(onExport).toHaveBeenCalledOnce()
+  })
 })

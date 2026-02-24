@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useApplications } from './hooks/useApplications'
 import { ApplicationForm } from './components/ApplicationForm'
 import { ApplicationTable } from './components/ApplicationTable'
 import { ExportButton } from './components/ExportButton'
+import { BackupControls } from './components/BackupControls'
 import { EditModal } from './components/EditModal'
 import { ConfirmDialog } from './components/ConfirmDialog'
 import { WeeklySummary } from './components/WeeklySummary'
@@ -11,7 +12,7 @@ import type { JobApplication, ApplicationStatus } from './types'
 import type { SortDirection } from './utils/filterAndSort'
 
 export default function App() {
-  const { applications, add, update, remove } = useApplications()
+  const { applications, add, update, remove, importAll, isDirty, markClean } = useApplications()
   const [editingApp, setEditingApp] = useState<JobApplication | undefined>()
   const [deletingId, setDeletingId] = useState<string | undefined>()
   const [statusFilter, setStatusFilter] = useState<ApplicationStatus | ''>('')
@@ -19,6 +20,16 @@ export default function App() {
   const [search, setSearch] = useState('')
 
   const visible = filterAndSort(applications, { statusFilter, sortDirection, search })
+
+  useEffect(() => {
+    function handleBeforeUnload(e: BeforeUnloadEvent) {
+      if (isDirty) {
+        e.preventDefault()
+      }
+    }
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+  }, [isDirty])
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -75,8 +86,9 @@ export default function App() {
             </select>
           </div>
 
-          <div className="ml-auto">
-            <ExportButton applications={visible} />
+          <div className="ml-auto flex gap-2">
+            <ExportButton applications={visible} onExport={markClean} />
+            <BackupControls applications={applications} onImport={importAll} onExport={markClean} />
           </div>
         </div>
 

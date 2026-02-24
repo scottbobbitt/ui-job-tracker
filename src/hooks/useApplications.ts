@@ -18,6 +18,8 @@ function save(applications: JobApplication[]) {
 
 export function useApplications() {
   const [applications, setApplications] = useState<JobApplication[]>(load)
+  // Dirty from the moment we have any data — cleared only after an export.
+  const [isDirty, setIsDirty] = useState(() => load().length > 0)
 
   function add(data: Omit<JobApplication, 'id' | 'createdAt' | 'updatedAt'>) {
     const now = new Date().toISOString()
@@ -30,6 +32,7 @@ export function useApplications() {
     const next = [entry, ...applications]
     save(next)
     setApplications(next)
+    setIsDirty(true)
   }
 
   function update(id: string, data: Omit<JobApplication, 'id' | 'createdAt' | 'updatedAt'>) {
@@ -38,13 +41,25 @@ export function useApplications() {
     )
     save(next)
     setApplications(next)
+    setIsDirty(true)
   }
 
   function remove(id: string) {
     const next = applications.filter((a) => a.id !== id)
     save(next)
     setApplications(next)
+    setIsDirty(true)
   }
 
-  return { applications, add, update, remove }
+  function importAll(apps: JobApplication[]) {
+    save(apps)
+    setApplications(apps)
+    setIsDirty(true)
+  }
+
+  function markClean() {
+    setIsDirty(false)
+  }
+
+  return { applications, add, update, remove, importAll, isDirty, markClean }
 }

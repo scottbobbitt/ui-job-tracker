@@ -107,4 +107,54 @@ describe('useApplications', () => {
     const { result } = renderHook(() => useApplications())
     expect(result.current.applications).toHaveLength(0)
   })
+
+  it('isDirty starts false when localStorage is empty', () => {
+    const { result } = renderHook(() => useApplications())
+    expect(result.current.isDirty).toBe(false)
+  })
+
+  it('isDirty starts true when localStorage already has applications', () => {
+    const existing = [
+      { ...BASE, id: 'abc', createdAt: '2026-01-01T00:00:00.000Z', updatedAt: '2026-01-01T00:00:00.000Z' },
+    ]
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(existing))
+    const { result } = renderHook(() => useApplications())
+    expect(result.current.isDirty).toBe(true)
+  })
+
+  it('isDirty becomes true after add()', () => {
+    const { result } = renderHook(() => useApplications())
+    act(() => { result.current.add(BASE) })
+    expect(result.current.isDirty).toBe(true)
+  })
+
+  it('isDirty becomes true after update()', () => {
+    const { result } = renderHook(() => useApplications())
+    act(() => { result.current.add(BASE) })
+    const id = result.current.applications[0].id
+    act(() => { result.current.update(id, { ...BASE, companyName: 'New' }) })
+    expect(result.current.isDirty).toBe(true)
+  })
+
+  it('isDirty becomes true after remove()', () => {
+    const { result } = renderHook(() => useApplications())
+    act(() => { result.current.add(BASE) })
+    const id = result.current.applications[0].id
+    act(() => { result.current.remove(id) })
+    expect(result.current.isDirty).toBe(true)
+  })
+
+  it('isDirty becomes true after importAll()', () => {
+    const { result } = renderHook(() => useApplications())
+    act(() => { result.current.importAll([]) })
+    expect(result.current.isDirty).toBe(true)
+  })
+
+  it('markClean() resets isDirty to false', () => {
+    const { result } = renderHook(() => useApplications())
+    act(() => { result.current.add(BASE) })
+    expect(result.current.isDirty).toBe(true)
+    act(() => { result.current.markClean() })
+    expect(result.current.isDirty).toBe(false)
+  })
 })
